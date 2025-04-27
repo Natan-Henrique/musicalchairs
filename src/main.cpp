@@ -131,11 +131,6 @@ public:
         }
     }
 
-    void verificar_eliminacao() {
-        if (eliminado) {
-            jogo.eliminar_jogador(id);
-        }
-    }
 
     void joga() {
         while (jogo_ativo) {
@@ -147,7 +142,6 @@ public:
             if (!jogo_ativo) break;
 
             tentar_ocupar_cadeira();
-            verificar_eliminacao();
 
             {
                 std::unique_lock<std::mutex> lock(music_mutex);
@@ -209,12 +203,20 @@ public:
         }
 
         int eliminado_id = -1;
+        std::vector<int> candidatos;
+
         for (int id : jogo.get_jogadores_ativos()) {
             if (std::find(jogadores_sentados.begin(), jogadores_sentados.end(), id) == jogadores_sentados.end()) {
-                eliminado_id = id;
-                jogo.eliminar_jogador(id);
-                break;
+                candidatos.push_back(id);
             }
+        }
+
+        if (!candidatos.empty()) {
+            std::random_device rd;
+            std::mt19937 gen(rd());
+            std::uniform_int_distribution<> dis(0, candidatos.size() - 1);
+            eliminado_id = candidatos[dis(gen)];
+            jogo.eliminar_jogador(eliminado_id);
         }
 
         jogo.exibir_resultado_rodada(eliminado_id);
